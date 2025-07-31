@@ -1,6 +1,7 @@
 const OTP = require("../models/otpModel");
 const User = require("../models/userModel");
 const bcrypt = require("bcrypt");
+const saltRounds = 10;
 const sendOTP = require("../utils/sendOTP");
 
 
@@ -26,7 +27,7 @@ exports.resetPassword = async (req, res) => {
     const validOtp = await OTP.findOne({ email, otp });
     if (!validOtp) return res.status(400).json({ message: "Invalid or expired OTP" });
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
     await User.updateOne({ email }, { password: hashedPassword });
 
     await OTP.deleteMany({ email }); // cleanup

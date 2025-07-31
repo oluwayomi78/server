@@ -16,7 +16,10 @@ const sendOTP = async (email, otp) => {
             to: email,
             subject: "Your OTP Code",
             text: `Your OTP code is: ${otp}. It will expire in 5 minutes.`,
-            html: `<p>Your OTP code is: <strong>${otp}</strong></p><p>This code will expire in 5 minutes.</p>`,
+            html: `
+            <p>Your OTP code is: <strong>${otp}</strong></p><p>This code will expire in 5 minutes.</p>
+            <p>http://localhost:3000/reset<p>
+            `,
         };
 
         await transporter.sendMail(mailOptions);

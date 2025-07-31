@@ -23,7 +23,7 @@ mongoose.connect(uri)
 .catch((err) => console.error("Database connection failed:", err));
 
 app.use("/", authRoutes);
-app.use("/auth", otpRoutes); // e.g., /auth/request-otp, /auth/reset-password
+app.use("/auth", otpRoutes);
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
