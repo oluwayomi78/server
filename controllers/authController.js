@@ -67,7 +67,12 @@ exports.getCurrentUser = async (req, res) => {
         }
 
         const token = authHeader.split(" ")[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.JWT_SECRET || "secretkey");
+        } catch (jwtErr) {
+            return res.status(401).json({ message: "Invalid or expired token" });
+        }
 
         const user = await User.findById(decoded.id).select("-password");
         if (!user) {
@@ -77,6 +82,6 @@ exports.getCurrentUser = async (req, res) => {
         res.json(user);
     } catch (err) {
         console.error("Error fetching current user:", err);
-        res.status(401).json({ message: "Invalid token" });
+        res.status(500).json({ message: "Internal server error" });
     }
 };
