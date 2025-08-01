@@ -59,12 +59,24 @@ exports.login = async (req, res) => {
     }
 };
 
-exports.getAllUsers = async (req, res) => {
+exports.getCurrentUser = async (req, res) => {
     try {
-        const users = await User.find();
-        res.json(users);
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const user = await User.findById(decoded.id).select("-password");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.json(user);
     } catch (err) {
-        console.log("Error fetching users:", err);
-        res.status(500).json({ message: "Internal server error" });
+        console.error("Error fetching current user:", err);
+        res.status(401).json({ message: "Invalid token" });
     }
 };
