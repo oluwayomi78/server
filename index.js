@@ -5,8 +5,10 @@ const ejs = require("ejs");
 require("dotenv").config();
 const mongoose = require("mongoose");
 
+
 const authRoutes = require("./routes/authRoutes");
 const otpRoutes = require("./routes/otpRoutes");
+const authController = require("./controllers/authController");
 
 
 app.use(cors());
@@ -22,8 +24,12 @@ mongoose.connect(uri)
 .then(() => console.log("Database connected successfully"))
 .catch((err) => console.error("Database connection failed:", err));
 
+
 app.use("/", authRoutes);
 app.use("/auth", otpRoutes);
+
+// Direct route for dashboard user fetch
+app.get("/getCurrentUser", authController.getCurrentUser);
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
