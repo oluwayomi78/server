@@ -8,10 +8,14 @@ const verifyToken = (req, res, next) => {
     }
 
     const token = authHeader.split(" ")[1];
+    console.log(token)
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || "secretkey");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // console.log(decoded)
         req.user = decoded; // Attach user info to request
+        // console.log(req.user)
+        console.log("VERIFY JWT WITH:", process.env.JWT_SECRET);
         next();
     } catch (err) {
         console.error("Token verification failed:", err);
