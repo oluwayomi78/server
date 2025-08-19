@@ -1,0 +1,98 @@
+const mongoose = require("mongoose");
+const User = require("../models/userModel");
+const Transaction = require("../models/transactionModel");
+
+exports.transferFunds = async (req, res) => {
+    const { accountNumber, bankName, amount, note } = req.body;
+
+    try {
+        // 1️⃣ Validate input
+        if (!accountNumber || !bankName || !amount) {
+            return res.status(400).json({ success: false, message: "All fields are required" });
+        }
+
+        // Convert amount to number
+        const transferAmount = Number(amount);
+        if (isNaN(transferAmount) || transferAmount <= 0) {
+            return res.status(400).json({ success: false, message: "Invalid transfer amount" });
+        }
+
+        // 2️⃣ Get sender from token
+        const senderId = req.user?.id || req.user?._id;
+        if (!senderId) {
+            return res.status(401).json({ success: false, message: "Unauthorized: Invalid token payload" });
+        }
+
+        // Start MongoDB transaction
+        const session = await mongoose.startSession();
+        session.startTransaction();
+
+        // 3️⃣ Find sender
+        const sender = await User.findById(senderId).session(session);
+        if (!sender) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ success: false, message: "Sender not found" });
+        }
+
+        // Check balance
+        if (sender.accountBalance < transferAmount) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ success: false, message: "Insufficient funds" });
+        }
+
+        // 4️⃣ Find recipient
+        const recipient = await User.findOne({
+            accountNumber: accountNumber,
+            "bankDetails.bankName": { $regex: bankName, $options: "i" }
+        }).session(session);
+
+        if (!recipient) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(404).json({ success: false, message: "Recipient not found" });
+        }
+
+        // Prevent sending to self
+        if (recipient._id.toString() === sender._id.toString()) {
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ success: false, message: "Cannot transfer to your own account" });
+        }
+
+        // 5️⃣ Update balances
+        sender.accountBalance -= transferAmount;
+        recipient.accountBalance += transferAmount;
+
+        await sender.save({ session });
+        await recipient.save({ session });
+
+        // 6️⃣ Record transaction
+        const transaction = new Transaction({
+            sender: sender._id,
+            recipient: recipient._id,
+            amount: transferAmount,
+            note,
+            type: "TRANSFER",
+            status: "SUCCESS"
+        });
+        await transaction.save({ session });
+
+        // Commit transaction
+        await session.commitTransaction();
+        session.endSession();
+
+        // ✅ Success response
+        res.json({
+            success: true,
+            message: "Transfer successful",
+            senderBalance: sender.accountBalance,
+            transactionId: transaction._id
+        });
+
+    } catch (error) {
+        console.error("Error in transferFunds:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};

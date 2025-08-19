@@ -1,21 +1,19 @@
 const jwt = require("jsonwebtoken");
 
 const verifyToken = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (!authHeader || typeof authHeader !== "string" || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({ message: "Unauthorized: Token missing or malformed" });
     }
 
     const token = authHeader.split(" ")[1];
-    console.log(token)
+    if (!token) {
+        return res.status(401).json({ message: "Unauthorized: Token missing" });
+    }
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        // console.log(decoded)
-        req.user = decoded; // Attach user info to request
-        // console.log(req.user)
-        console.log("VERIFY JWT WITH:", process.env.JWT_SECRET);
+        req.user = decoded;
         next();
     } catch (err) {
         console.error("Token verification failed:", err);
