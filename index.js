@@ -14,7 +14,7 @@ const paystackRoutes = require("./routes/paystackRoutes");
 
 // Configure middleware
 app.use(cors({
-    origin: ["http://localhost:3000", "https://my-app-ebon-three-38.vercel.app"],
+    origin: ["http://localhost:3000", "https://my-app-ebon-three-38.vercel.app", "https://precious-bank.vercel.app"],
     credentials: true
 }));
 
